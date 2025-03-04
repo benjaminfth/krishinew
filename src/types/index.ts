@@ -2,10 +2,11 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price_registered: number;
+  price_unregistered: number;
   category: 'Seeds' | 'Saplings' | 'Pesticides' | 'Fertilizers';
   imageUrl: string;
-  krishiBhavan: 'Krishi Bahavan 1' | 'Krishi Bahavan 2';
+  krishiBhavan: 'Krishi Bhavan 1' | 'Krishi Bhavan 2';
   stock: number;
   officeId: string;
 }

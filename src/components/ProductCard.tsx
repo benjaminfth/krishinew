@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Clock, MapPin, X, Minus, Plus, ShoppingCart } from 'lucide-react';
-import type { Product } from '../types';
+import type { Product } from '../types'; // Ensure the path is correct
 import { useCartStore } from '../store/cartStore';
 
 interface ProductCardProps {

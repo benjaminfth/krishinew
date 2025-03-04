@@ -58,6 +58,7 @@ def register():
         'address': data.get('address'),
         'pincode': data.get('pincode'),
         'password': hashed_password,
+        'uniqueId': data.get('uniqueId'),
         'role': data['role']
     }
     users_collection.insert_one(user)
@@ -92,10 +93,49 @@ def login():
         'phone': user['phone'],
         'address': user['address'],
         'pincode': user['pincode'],
-        'role': user['role']
+        'uniqueId': user['uniqueId'],
+        'role': user.get('role', 'user')
     }
     logger.info("User logged in successfully: %s", user_data)
     return jsonify(user_data), 200
+
+@app.route('/update-profile', methods=['PUT'])
+def update_profile():
+    data = request.get_json()
+    user_id = data.get('userId')
+
+    if not user_id:
+        return jsonify({'error': 'User ID is required'}), 400
+
+    try:
+        user_id = ObjectId(user_id)  # Convert string to MongoDB ObjectId
+    except:
+        return jsonify({'error': 'Invalid user ID format'}), 400
+
+    # Fetch existing user data to compare changes
+    existing_user = users_collection.find_one({"_id": user_id}, {"password": 0})
+    if not existing_user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Build an update dictionary with only changed fields
+    updated_data = {}
+    for field in ["name", "email", "phone", "address", "pincode"]:
+        if field in data and data[field] and data[field] != existing_user.get(field):
+            updated_data[field] = data[field]
+
+    if not updated_data:  # No changes detected
+        return jsonify({'error': 'No updates were made'}), 400
+
+    # Update the user in MongoDB
+    result = users_collection.update_one({"_id": user_id}, {"$set": updated_data})
+
+    if result.modified_count == 0:
+        return jsonify({'error': 'Failed to update profile'}), 400
+
+    # Fetch the updated user data
+    updated_user = users_collection.find_one({"_id": user_id}, {"password": 0})  # Exclude password
+
+    return jsonify({'message': 'Profile updated successfully', 'user': updated_user}), 200
 
 # ========================== PRODUCT MANAGEMENT ========================== #
 
@@ -105,22 +145,25 @@ def add_product():
     logger.info("Received product data: %s", data)
 
     # Validate input
-    if not data.get('name') or not data.get('price') or not data.get('category'):
-        return jsonify({'error': 'Product name, price, and category are required'}), 400
+    if not data.get('name') or not data.get('price_registered') or not data.get('price_unregistered') or not data.get('category'):
+        return jsonify({'error': 'Product name, registered price, unregistered price, and category are required'}), 400  # Corrected indentation
 
     product = {
         "name": data['name'],
         "description": data.get('description', ''),
-        "price": float(data['price']),
+        "price_registered": float(data['price_registered']),
+        "price_unregistered": float(data['price_unregistered']),
         "stock": int(data.get('stock', 0)),
         "category": data['category'],
         "krishiBhavan": data.get('krishiBhavan', ''),
         "imageUrl": data.get('imageUrl', '')
     }
+
     result = products_collection.insert_one(product)
     logger.info("Product added: %s", product)
 
     return jsonify({'message': 'Product added successfully', 'id': str(result.inserted_id)}), 201
+
 
 
 @app.route('/products', methods=['GET'])
@@ -131,7 +174,8 @@ def get_products():
             'id': str(product['_id']),
             'name': product['name'],
             'description': product.get('description', ''),
-            'price': product['price'],
+            'price_registered': product.get('price_registered', 0),  # Default to 0 if not found
+            'price_unregistered': product.get('price_unregistered', 0),
             'stock': product.get('stock', 0),
             'category': product['category'],
             'krishiBhavan': product.get('krishiBhavan', ''),
