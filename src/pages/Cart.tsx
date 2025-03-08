@@ -8,11 +8,12 @@ import { useCartStore } from '../store/cartStore';
 export const Cart = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { isAuthenticated, user } = useAuthStore();
-  const { items: cartItems, updateQuantity, removeItem, clearCart } = useCartStore();
+  const { items: cartItems, updateQuantity, removeItem, clearCart, preBookNow } = useCartStore();
   const navigate = useNavigate();
 
   const calculateTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    const total = cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    return isNaN(total) ? 0 : total;
   };
 
   const handleCheckout = async () => {
@@ -23,11 +24,14 @@ export const Cart = () => {
 
     setIsProcessing(true);
     try {
-      // Mock API call to create pre-booking
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const totalAmount = calculateTotal();
+      console.log('Total Amount:', totalAmount);
+      for (const item of cartItems) {
+        await preBookNow(item.product, item.quantity, item.office, totalAmount);
+      }
       
       // Clear cart after successful pre-booking
-      clearCart();
+      await clearCart();
       
       // Show success message or redirect to confirmation page
       alert('Pre-booking confirmed! Please collect your items within 24 hours.');

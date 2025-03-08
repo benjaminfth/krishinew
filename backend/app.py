@@ -20,6 +20,8 @@ client = MongoClient(MONGO_URI)
 db = client["mydatabase"]  # Replace with your actual database name
 users_collection = db["users"]
 products_collection = db["products"]  # New collection for storing products
+cart_collection = db["cart"]
+bookings_collection = db["bookings"]
 
 # ======================= USER AUTHENTICATION ========================== #
 
@@ -365,6 +367,54 @@ def clear_cart():
 
     logger.info("Cart cleared for user_id %s", user_id)
     return jsonify({'message': 'Cart cleared'}), 200
+@app.route('/bookings', methods=['POST'])
+def pre_book_now():
+    data = request.get_json()
+    logger.info("Received booking data: %s", data)  # Log the received data
+
+    user_id = data.get('user_id')
+    product_name = data.get('product_name')
+    product_id = data.get('product_id')
+    quantity = data.get('quantity')
+    krishiBhavan = data.get('krishiBhavan')
+    booking_date_time = data.get('booking_date_time')
+    total_amount = data.get('total_amount')
+    collection_status = data.get('collection_status', 'pending')
+
+    missing_fields = {}
+    if not user_id:
+        missing_fields['user_id'] = user_id
+    if not product_name:
+        missing_fields['product_name'] = product_name
+    if not product_id:
+        missing_fields['product_id'] = product_id
+    if quantity is None:
+        missing_fields['quantity'] = quantity
+    if not krishiBhavan:
+        missing_fields['krishiBhavan'] = krishiBhavan
+    if not booking_date_time:
+        missing_fields['booking_date_time'] = booking_date_time
+    if total_amount is None:
+        missing_fields['total_amount'] = total_amount
+
+    if missing_fields:
+        logger.error("Failed to pre-book: All fields are required. Missing fields: %s", missing_fields)
+        return jsonify({'error': 'All fields are required', 'missing_fields': missing_fields}), 400
+
+    booking = {
+        'user_id': user_id,
+        'product_name': product_name,
+        'product_id': product_id,
+        'quantity': quantity,
+        'krishiBhavan': krishiBhavan,
+        'booking_date_time': booking_date_time,
+        'total_amount': total_amount,
+        'collection_status': collection_status
+    }
+
+    db.bookings.insert_one(booking)
+    logger.info("Pre-booking successful: %s", booking)
+    return jsonify({'message': 'Pre-booking successful', 'id': str(booking['_id'])}), 201
 
 if __name__ == '__main__':
     app.run(debug=True)
