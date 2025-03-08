@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { CartItem, Product, Office } from '../types';
+import axios from 'axios';
+import { useAuthStore } from './authStore'; // Import the auth store
 
 interface CartStore {
   items: CartItem[];
@@ -11,7 +13,10 @@ interface CartStore {
 
 export const useCartStore = create<CartStore>((set) => ({
   items: [],
-  addItem: (product, quantity, office) => {
+  addItem: async (product, quantity, office) => {
+    const { user } = useAuthStore.getState(); // Get the user from the auth store
+    const userId = user.id;
+
     set((state) => {
       const existingItem = state.items.find(item => item.product.id === product.id);
       
@@ -29,13 +34,32 @@ export const useCartStore = create<CartStore>((set) => ({
         items: [...state.items, { product, quantity, office }]
       };
     });
+
+    await axios.post('http://localhost:5000/cart', {
+      user_id: userId,
+      product_id: product.id,
+      quantity
+    });
   },
-  removeItem: (productId) => {
+  removeItem: async (productId) => {
+    const { user } = useAuthStore.getState(); // Get the user from the auth store
+    const userId = user.id;
+
     set((state) => ({
       items: state.items.filter(item => item.product.id !== productId)
     }));
+
+    await axios.delete('http://localhost:5000/cart', {
+      data: {
+        user_id: userId,
+        product_id: productId
+      }
+    });
   },
-  updateQuantity: (productId, quantity) => {
+  updateQuantity: async (productId, quantity) => {
+    const { user } = useAuthStore.getState(); // Get the user from the auth store
+    const userId = user.id;
+
     set((state) => ({
       items: state.items.map(item =>
         item.product.id === productId
@@ -43,8 +67,21 @@ export const useCartStore = create<CartStore>((set) => ({
           : item
       )
     }));
+
+    await axios.put('http://localhost:5000/cart', {
+      user_id: userId,
+      product_id: productId,
+      quantity
+    });
   },
-  clearCart: () => {
+  clearCart: async () => {
+    const { user } = useAuthStore.getState(); // Get the user from the auth store
+    const userId = user.id;
+
     set({ items: [] });
+
+    await axios.delete('http://localhost:5000/cart/clear', {
+      data: { user_id: userId }
+    });
   }
 }));

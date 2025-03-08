@@ -285,5 +285,86 @@ def get_product_details():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/cart', methods=['POST'])
+def add_to_cart():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    product_id = data.get('product_id')
+    quantity = data.get('quantity')
+
+    if not user_id or not product_id or quantity is None:
+        logger.error("Failed to add to cart: User ID, Product ID, and quantity are required")
+        return jsonify({'error': 'User ID, Product ID, and quantity are required'}), 400
+
+    cart_item = {
+        'user_id': ObjectId(user_id),
+        'product_id': ObjectId(product_id),
+        'quantity': quantity
+    }
+
+    db.cart.insert_one(cart_item)
+    logger.info("Item added to cart: %s", cart_item)
+    return jsonify({'message': 'Item added to cart'}), 201
+
+@app.route('/cart', methods=['PUT'])
+def update_cart():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    product_id = data.get('product_id')
+    quantity = data.get('quantity')
+
+    if not user_id or not product_id or quantity is None:
+        logger.error("Failed to update cart: User ID, Product ID, and quantity are required")
+        return jsonify({'error': 'User ID, Product ID, and quantity are required'}), 400
+
+    result = db.cart.update_one(
+        {'user_id': ObjectId(user_id), 'product_id': ObjectId(product_id)},
+        {'$set': {'quantity': quantity}}
+    )
+
+    if result.matched_count == 0:
+        logger.error("Failed to update cart: Cart item not found for user_id %s and product_id %s", user_id, product_id)
+        return jsonify({'error': 'Cart item not found'}), 404
+
+    logger.info("Cart item updated: user_id %s, product_id %s, quantity %s", user_id, product_id, quantity)
+    return jsonify({'message': 'Cart item updated'}), 200
+
+@app.route('/cart', methods=['DELETE'])
+def remove_from_cart():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    product_id = data.get('product_id')
+
+    if not user_id or not product_id:
+        logger.error("Failed to remove from cart: User ID and Product ID are required")
+        return jsonify({'error': 'User ID and Product ID are required'}), 400
+
+    result = db.cart.delete_one({'user_id': ObjectId(user_id), 'product_id': ObjectId(product_id)})
+
+    if result.deleted_count == 0:
+        logger.error("Failed to remove from cart: Cart item not found for user_id %s and product_id %s", user_id, product_id)
+        return jsonify({'error': 'Cart item not found'}), 404
+
+    logger.info("Cart item removed: user_id %s, product_id %s", user_id, product_id)
+    return jsonify({'message': 'Cart item removed'}), 200
+
+@app.route('/cart/clear', methods=['DELETE'])
+def clear_cart():
+    data = request.get_json()
+    user_id = data.get('user_id')
+
+    if not user_id:
+        logger.error("Failed to clear cart: User ID is required")
+        return jsonify({'error': 'User ID is required'}), 400
+
+    result = db.cart.delete_many({'user_id': ObjectId(user_id)})
+
+    if result.deleted_count == 0:
+        logger.error("Failed to clear cart: No items found in cart for user_id %s", user_id)
+        return jsonify({'error': 'No items found in cart for this user'}), 404
+
+    logger.info("Cart cleared for user_id %s", user_id)
+    return jsonify({'message': 'Cart cleared'}), 200
+
 if __name__ == '__main__':
     app.run(debug=True)
