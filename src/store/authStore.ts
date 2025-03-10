@@ -18,6 +18,7 @@ export const useAuthStore = create<AuthState & {
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   clearError: () => void;
+  setUser: (user: User) => void; // Add setUser method
 }>()(
   persist(
     (set) => ({
@@ -31,7 +32,6 @@ export const useAuthStore = create<AuthState & {
         try {
           const response = await axios.post('http://localhost:5000/login', { email, password });
 
-
           const user: User = {
             id: response.data.id,
             email: response.data.email,
@@ -41,8 +41,7 @@ export const useAuthStore = create<AuthState & {
             pincode: response.data.pincode,
             role: response.data.role
           };
-          
-          
+
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
           console.error("❌ Error: ", error);
@@ -63,7 +62,7 @@ export const useAuthStore = create<AuthState & {
             pincode: data.pincode,
             role: data.role
           };
-          
+
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
           console.error("❌ Error: ", error);
@@ -77,6 +76,11 @@ export const useAuthStore = create<AuthState & {
 
       clearError: () => {
         set({ error: null });
+      },
+
+      setUser: (user: User) => {
+        console.log("Updating user in auth store:", user); // Log the user data being set
+        set({ user });
       }
     }),
     {
