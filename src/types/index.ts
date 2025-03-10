@@ -21,16 +21,14 @@ export interface Office {
 
 export interface Booking {
   id: string;
-  productId: string;
-  userId: string;
-  officeId: string;
+  user_id: string;
+  product_name: string;
+  product_id: string;
   quantity: number;
-  status: 'pending' | 'confirmed' | 'collected' | 'expired';
-  bookingDate: Date;
-  expiryDate: Date;
-  product: Product;
-  office: Office;
-  totalAmount: number;
+  krishiBhavan: string;
+  booking_date_time: Date;
+  total_amount: number;
+  collection_status: 'pending' | 'confirmed' | 'collected' | 'expired';
 }
 
 export interface CartItem {
