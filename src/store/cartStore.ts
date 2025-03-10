@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { CartItem, Product, Office } from '../types';
 import axios from 'axios';
-import { useAuthStore } from './authStore'; // Import the auth store
+import { useAuthStore } from './authStore';
 
 interface CartStore {
   items: CartItem[];
@@ -106,5 +106,8 @@ export const useCartStore = create<CartStore>((set) => ({
     await axios.post('http://localhost:5000/bookings', bookingData);
 
     // Update product stock after pre-booking
+    await axios.put(`http://localhost:5000/products/${product.id}`, {
+      stock: product.stock - quantity
+    });
   }
 }));

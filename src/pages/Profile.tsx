@@ -55,56 +55,55 @@ export const Profile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-  
+
     // Find changes in the form data
     const updates: Partial<typeof formData> = {};
     Object.keys(formData).forEach((key) => {
-      if (formData[key as keyof typeof formData] !== user[key as keyof typeof user]) {
-        updates[key as keyof typeof formData] = formData[key as keyof typeof formData];
-      }
+        if (formData[key as keyof typeof formData] !== user[key as keyof typeof user]) {
+            updates[key as keyof typeof formData] = formData[key as keyof typeof formData];
+        }
     });
-  
+
     // If no changes, return early
     if (Object.keys(updates).length === 0) {
-      setIsEditing(false);
-      setIsSaving(false);
-      return;
+        setIsEditing(false);
+        setIsSaving(false);
+        console.log("No changes detected in the form data");
+        return;
     }
-  
+
     try {
-      // Call the update profile API
-      const response = await fetch('http://localhost:5000/update-profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,  // Send the current user's ID
-          ...updates,  // Send only the fields that have changed
-        }),
-      });
-  
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update profile');
-  
-      // Fetch updated user profile after successful update
-      const updatedUserResponse = await fetch(`http://localhost:5000/user/${user.id}`);
-      const updatedUser = await updatedUserResponse.json();
-      
-      if (updatedUserResponse.ok) {
+        // Log the data being sent
+        console.log("Sending update profile data:", {
+            userId: user.id,
+            ...updates,
+        });
+
+        // Call the update profile API
+        const response = await fetch('http://localhost:5000/update-profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: user.id,  // Send the current user's ID
+                ...updates,  // Send only the fields that have changed
+            }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to update profile');
+
         // Update the global store with updated user data
-        useAuthStore.setState({ user: updatedUser });
-      } else {
-        throw new Error(updatedUser.error || 'Failed to fetch updated user data');
-      }
-  
-      setIsEditing(false);
+        setUser(data.user);
+
+        setIsEditing(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+        console.error('Error updating profile:', error);
     } finally {
-      setIsSaving(false);
+        setIsSaving(false);
     }
-  };
+};
   
   
   const getStatusColor = (status: Booking['status']) => {
